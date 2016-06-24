@@ -208,7 +208,7 @@ def main():
                                                  pops,
                                                  nosampler,
                                                  fitness,
-                                                 nlist[:8*N],
+                                                 nlist[:8*N+1],
                                                  0.0, #No neutral mutations
                                                  mutrate,
                                                  recrate,
@@ -231,7 +231,6 @@ def main():
                                                  recregions,
                                                  tsample, #This will end up not doing anything...
                                                  sigE)
-
         #If tsample is such that the last generation would not get processed,
         #then process it so that the final generation is included
         if float(len(nlist))%float(tsample) != 0.0:
