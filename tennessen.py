@@ -194,7 +194,7 @@ def main():
     nregions=[] #Simulate no neutral variants
     sregions=[fp.ExpS(0,1,1,L,dominance)] #The dominance term will be ignored for the GBR model
     recregions=[fp.Region(0,1,1)] #Recombination uniform along region
-
+    
     nosampler = fp.NothingSampler(ncores)
     rng = fp.GSLrng(seed)
     nlist=get_nlist()
@@ -231,6 +231,12 @@ def main():
                                                  recregions,
                                                  tsample, #This will end up not doing anything...
                                                  sigE)
+
+        #If tsample is such that the last generation would not get processed,
+        #then process it so that the final generation is included
+        if float(len(nlist))%float(tsample) != 0.0:
+            fp.apply_sampler(pops,sampler)
+            
         REPID=write_output(sampler,hdfout,REPID)
 
     hdfout.close()
