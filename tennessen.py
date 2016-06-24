@@ -32,7 +32,6 @@ def get_nlist():
     n.extend(dem.exponential_size_change(9300,51200,205)) #E5
     return np.array(n,dtype=np.uint32)
 
-#        opts,args = getopt.getopt(sys.argv[1:],"m:l:r:o:d:s:",["model=","sampler=","cores=","batches=","seed=","usage"])
 def usage():
     print ("Usage:")
     print ("python tennessen.py [options]")
