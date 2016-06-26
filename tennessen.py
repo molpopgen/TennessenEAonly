@@ -1,6 +1,5 @@
 from __future__ import print_function   
 import fwdpy as fp
-import fwdpy.fitness as fpw
 import fwdpy.qtrait as qt
 import fwdpy.demography as dem
 import numpy as np
@@ -44,6 +43,7 @@ def usage():
     print ("\t-o string (None) : output file name, which will be in HDF5 format")
     print ("\t-d float (1.0) :  Dominance of causal mutations.  Only relevant to additive and multiplicative trait value models")
     print ("\t-s float>0 (0.075) : Standard deviation in environmental noise added to trait values.")
+    print ("\t-t int>0 (50) : Apply the sampler every t generations")
     print ("\t--model string (gbr) : Trait value model must be one of gbr, additive, or multi")
     print ("\t--sampler string (None) : Must be one of VA or stats")
     print ("\t--cores int>0 (64) : Number of populations to simulate simultaneously using different threads")
@@ -56,11 +56,11 @@ def setup_fitness(fitnessString):
     Return the fitness model to use
     """
     if fitnessString == 'gbr':
-        return fpw.SpopGBR()
+        return qt.SpopGBRTrait()
     elif fitnessString == 'additive':
-        return fpw.SpopAdditive()
+        return qt.SpopAdditiveTrait()
     elif fitnessString == 'multi':
-        return fpw.SpopMult()
+        return qt.SpopMultTrait()
     else:
         print("fitness model must be gbr, additive, or multi")
         usage()
@@ -103,7 +103,7 @@ def main():
 
     ##Parse options
     try:
-        opts,args = getopt.getopt(sys.argv[1:],"m:l:r:o:d:s:",["model=","sampler=","cores=","batches=","seed=","usage"])
+        opts,args = getopt.getopt(sys.argv[1:],"m:l:r:o:d:s:t:",["model=","sampler=","cores=","batches=","seed=","usage"])
     except getopt.GetoptError as err:
         print(err) # will print something like "option -a not recognized"
         usage()
@@ -151,6 +151,12 @@ def main():
             sigE=float(a)
             if sigE < 0.0:
                 print("sigmaE must be >= 0.0")
+                usage()
+                sys.exit(0)
+        elif o == '-t':
+            tsample = int(a)
+            if tsample < 1:
+                print("sampling interval must be > 0")
                 usage()
                 sys.exit(0)
         elif o == '--model':
