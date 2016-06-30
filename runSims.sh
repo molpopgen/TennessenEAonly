@@ -1,7 +1,9 @@
 #!/bin/bash
 
-#$ -q krt,krti,bio,pub64
+#$ -q krt,krti,bio,pub64,sf
 #$ -pe openmp 64
+#$ -R y
+
 
 module load krthornt/thorntonlab
 cd $SGE_O_WORKDIR
