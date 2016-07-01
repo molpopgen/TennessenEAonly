@@ -7,6 +7,7 @@ import pandas as pd
 import getopt
 import sys
 import math
+import datetime
 
 def get_nlist():
     """
@@ -80,13 +81,16 @@ def setup_sampler(samplerString,len):
         usage()
         sys.exit(0)
 
+
 def write_output(sampler,output,REPID):
     """
     Get the data from each sampler, add
     a "replicate ID number" to each element,
     then write to an HDF5 file.
     """
+    print("starting to get results from sampler at",datetime.datetime.now().time().isoformat())
     df=[pd.DataFrame(i) for i in sampler.get()]
+    print("finished getting results from sampler at",datetime.datetime.now().time().isoformat())
     for i in df:
         i['rep']=[REPID]*len(i.index)
         REPID+=1
@@ -205,8 +209,7 @@ def main():
     nlist=get_nlist()
     hdfout = pd.HDFStore(outfile,'w',complevel=6,complib='zlib')
     for i in range(nbatches):
-        sampler = setup_sampler(samplerString,ncores)
-
+        print ("starting sims at",datetime.datetime.now().time().isoformat())
         pops = fp.SpopVec(ncores,N)
         #We will evolve the first 8N generations w/o sampling anything
         qt.evolve_regions_qtrait_sampler_fitness(rng,
@@ -220,8 +223,10 @@ def main():
                                                  nregions,
                                                  sregions,
                                                  recregions,
-                                                 tsample, #This will end up not doing anything...
+                                                 N, #This will end up not doing anything...
                                                  sigE)
+        print("evolved batch",i,"to equilibrium at",datetime.datetime.now().time().isoformat())
+        sampler = setup_sampler(samplerString,ncores)
         #Now, evolve the rest of the way and sample...
         qt.evolve_regions_qtrait_sampler_fitness(rng,
                                                  pops,
@@ -234,13 +239,14 @@ def main():
                                                  nregions,
                                                  sregions,
                                                  recregions,
-                                                 tsample, #This will end up not doing anything...
+                                                 tsample, 
                                                  sigE)
+        print ("finished evolving batch",i,"at",datetime.datetime.now().time().isoformat())
         #If tsample is such that the last generation would not get processed,
         #then process it so that the final generation is included
         if float(len(nlist))%float(tsample) != 0.0:
             fp.apply_sampler(pops,sampler)
-            
+        print ("Applied final sampler at",datetime.datetime.now().time().isoformat())
         REPID=write_output(sampler,hdfout,REPID)
 
     hdfout.close()
