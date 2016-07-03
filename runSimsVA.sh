@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#$ -q krt,krti,bio,pub64,abio,free64
+#$ -q krt,krti,bio,pub64
 #$ -pe openmp 64
 #$ -ckpt restart
 #$ -R y
@@ -17,4 +17,4 @@ dominance=$5
 sampler=$6
 
 #We only do 32 sims at a time to (attempt to) keep peak RAM under control.  8*32 = 256 total replicates
-/usr/bin/time -f "%e %M" -o $outfile.time python tennessen.py --model $model -l $lambda -o $outfile --seed $4 -d $5 --sampler $6 --batches 8 --cores 32 -t 100
+/usr/bin/time -f "%e %M" -o $outfile.time python tennessen.py --model $model -l $lambda -o $outfile --seed $4 -d $5 --sampler $6 --batches 8 --cores 25 -t 100
