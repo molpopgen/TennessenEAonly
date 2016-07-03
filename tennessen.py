@@ -209,7 +209,7 @@ def main():
     nlist=get_nlist()
     hdfout = pd.HDFStore(outfile,'w',complevel=6,complib='zlib')
     for i in range(nbatches):
-        print ("starting sims at",datetime.datetime.now().time().isoformat())
+        print ("starting batch",i,"of",nbatches," at",datetime.datetime.now().time().isoformat())
         pops = fp.SpopVec(ncores,N)
         #We will evolve the first 8N generations w/o sampling anything
         qt.evolve_regions_qtrait_sampler_fitness(rng,
