@@ -27,7 +27,7 @@ do
 	do
 	    ofile=$model."lambda"$lambda.$sampler.h$dominance.h5
 	    name=$model$sampler
-	    qsub -N $name runSimsVA.sh $model $lambda $ofile $seed 1.0 $sampler
+	    qsub -N $name runSimsVA.sh $model $lambda $ofile $seed $dominance $sampler
 	    seed=$RANDOM
 	done
     done
