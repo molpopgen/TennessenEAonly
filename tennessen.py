@@ -219,7 +219,6 @@ def main():
     rng = fp.GSLrng(seed)
     nlist=get_nlist()
     epochs=get_epoch_lengths()
-    print (len(nlist),' ',sum(epochs))
     hdfout = pd.HDFStore(outfile,'w',complevel=6,complib='zlib')
     for i in range(nbatches):
         print ("starting batch",i,"of",nbatches," at",datetime.datetime.now().time().isoformat())
