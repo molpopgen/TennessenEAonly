@@ -32,6 +32,17 @@ def get_nlist():
     n.extend(dem.exponential_size_change(9300,51200,205)) #E5
     return np.array(n,dtype=np.uint32)
 
+def get_epoch_lengths():
+    """
+    Gets the epoch lengths of the demographic model
+    """
+    rv=[]
+    rv.append(10*7310)
+    rv.append(5920-2040)
+    rv.append(2040-920)
+    rv.append(920) #We merge the last two into a single "growth epoch" so that we only have 1 really big regression to do
+    return rv
+
 def usage():
     print ("Usage:")
     print ("python tennessen.py [options]")
@@ -207,47 +218,101 @@ def main():
     nosampler = fp.NothingSampler(ncores)
     rng = fp.GSLrng(seed)
     nlist=get_nlist()
+    epochs=get_epoch_lengths()
+    print (len(nlist),' ',sum(epochs))
     hdfout = pd.HDFStore(outfile,'w',complevel=6,complib='zlib')
     for i in range(nbatches):
         print ("starting batch",i,"of",nbatches," at",datetime.datetime.now().time().isoformat())
         pops = fp.SpopVec(ncores,N)
-        #We will evolve the first 8N generations w/o sampling anything
-        qt.evolve_regions_qtrait_sampler_fitness(rng,
-                                                 pops,
-                                                 nosampler,
-                                                 fitness,
-                                                 nlist[:8*N+1],
-                                                 0.0, #No neutral mutations
-                                                 mutrate,
-                                                 recrate,
-                                                 nregions,
-                                                 sregions,
-                                                 recregions,
-                                                 N, #This will end up not doing anything...
-                                                 sigE)
-        print("evolved batch",i,"to equilibrium at",datetime.datetime.now().time().isoformat())
-        sampler = setup_sampler(samplerString,ncores)
-        #Now, evolve the rest of the way and sample...
-        qt.evolve_regions_qtrait_sampler_fitness(rng,
-                                                 pops,
-                                                 sampler,
-                                                 fitness,
-                                                 nlist[(8*N+1):],
-                                                 0.0, #No neutral mutations
-                                                 mutrate,
-                                                 recrate,
-                                                 nregions,
-                                                 sregions,
-                                                 recregions,
-                                                 tsample, 
-                                                 sigE)
-        print ("finished evolving batch",i,"at",datetime.datetime.now().time().isoformat())
-        #If tsample is such that the last generation would not get processed,
-        #then process it so that the final generation is included
-        if float(len(nlist))%float(tsample) != 0.0:
-            fp.apply_sampler(pops,sampler)
-        print ("Applied final sampler at",datetime.datetime.now().time().isoformat())
-        REPID=write_output(sampler,hdfout,REPID)
+        if samplerString != 'VA':
+            #We will evolve the first 8N generations w/o sampling anything
+            qt.evolve_regions_qtrait_sampler_fitness(rng,
+                                                     pops,
+                                                     nosampler,
+                                                     fitness,
+                                                     nlist[:8*N+1],
+                                                     0.0, #No neutral mutations
+                                                     mutrate,
+                                                     recrate,
+                                                     nregions,
+                                                     sregions,
+                                                     recregions,
+                                                     N, #This will end up not doing anything...
+                                                     sigE)
+            print("evolved batch",i,"to equilibrium at",datetime.datetime.now().time().isoformat())
+            sampler = setup_sampler(samplerString,ncores)
+            #Now, evolve the rest of the way and sample...
+            qt.evolve_regions_qtrait_sampler_fitness(rng,
+                                                     pops,
+                                                     sampler,
+                                                     fitness,
+                                                     nlist[(8*N+1):],
+                                                     0.0, #No neutral mutations
+                                                     mutrate,
+                                                     recrate,
+                                                     nregions,
+                                                     sregions,
+                                                     recregions,
+                                                     tsample, 
+                                                     sigE)
+            print ("finished evolving batch",i,"at",datetime.datetime.now().time().isoformat())
+            #If tsample is such that the last generation would not get processed,
+            #then process it so that the final generation is included
+            if float(len(nlist))%float(tsample) != 0.0:
+                fp.apply_sampler(pops,sampler)
+                print ("Applied final sampler at",datetime.datetime.now().time().isoformat())
+                REPID=write_output(sampler,hdfout,REPID)
+        else:
+            #For the VA sampler, we simulate each epoch separately.
+            #After 10N generations to equilibrium, we apply a VA
+            #sampler at 1st & last generation of each epoch.
+            #We treat both periods of growth as 1 epoch.
+            se=0
+            EPOCH=0
+            for e in epochs:
+                start=se
+                end=se+e-1
+                print(e,se,len(nlist),nlist[start],nlist[end],len(nlist[start:end+1]))
+                if EPOCH > 0:
+                    #Evolve pop a single generation at beginning of this epoch
+                    qt.evolve_regions_qtrait_sampler_fitness(rng,
+                                                             pops,
+                                                             nosampler,
+                                                             fitness,
+                                                             nlist[start:start+1],
+                                                             0.0, #No neutral mutations
+                                                             mutrate,
+                                                             recrate,
+                                                             nregions,
+                                                             sregions,
+                                                             recregions,
+                                                             N, #This will end up not doing anything...
+                                                             sigE)
+                    sampler=fp.VASampler(len(pops))
+                    fp.apply_sampler(pops,sampler)
+                    dummy=write_output(sampler,hdfout,REPID)
+
+                # #Do the evolution for rest of epoch
+                qt.evolve_regions_qtrait_sampler_fitness(rng,
+                                                         pops,
+                                                         nosampler,
+                                                         fitness,
+                                                         nlist[start+1:end+1],
+                                                         0.0, #No neutral mutations
+                                                         mutrate,
+                                                         recrate,
+                                                         nregions,
+                                                         sregions,
+                                                         recregions,
+                                                         N, #This will end up not doing anything...
+                                                         sigE)
+                if EPOCH > 0:
+                    sampler=fp.VASampler(len(pops))
+                    fp.apply_sampler(pops,sampler)
+                    dummy=write_output(sampler,hdfout,REPID)
+                se+=e
+                EPOCH+=1
+            REPID+=len(pops)
 
     hdfout.close()
 if __name__ == "__main__":
