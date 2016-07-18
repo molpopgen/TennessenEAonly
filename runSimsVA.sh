@@ -1,11 +1,13 @@
 #!/bin/bash
 
-#$ -q krt,krti,bio,pub64
-#$ -pe openmp 64
+#$ -q krt,krti,bio,pub64,abio,free64
+#$ -pe openmp 4
 #$ -ckpt restart
 #$ -R y
 ##These jobs take A HECK OF A LOT of RAM, so avoid low-memory nodes:
 #$ -l mem_size=512
+#$ -t 1-100
+
 module load krthornt/thorntonlab
 cd $SGE_O_WORKDIR
 
@@ -16,5 +18,6 @@ seed=$4
 dominance=$5
 sampler=$6
 
-#We only do 32 sims at a time to (attempt to) keep peak RAM under control.  8*32 = 256 total replicates
-/usr/bin/time -f "%e %M" -o $outfile.time python tennessen.py --model $model -l $lambda -o $outfile --seed $4 -d $5 --sampler $6 --batches 8 --cores 25 -t 100
+#1 rep at a time, but use an array job
+SEED=`echo "$RANDOM*$SGE_TASK_ID"|bc -l`
+/usr/bin/time -f "%e %M" -o $outfile.$SGE_TASK_ID.time python -u tennessen.py --model $model -l $lambda -o $outfile.$SGE_TASK_ID.h5 --seed $SEED -d $5 --sampler $6 --batches 1 --cores 1 -t 1000

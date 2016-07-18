@@ -254,7 +254,6 @@ def main():
                                                      recregions,
                                                      tsample, 
                                                      sigE)
-            print ("finished evolving batch",i,"at",datetime.datetime.now().time().isoformat())
             #If tsample is such that the last generation would not get processed,
             #then process it so that the final generation is included
             if float(len(nlist))%float(tsample) != 0.0:
@@ -273,6 +272,7 @@ def main():
                 end=se+e-1
                 print(e,se,len(nlist),nlist[start],nlist[end],len(nlist[start:end+1]))
                 if EPOCH > 0:
+                    print ("starting epoch",EPOCH)
                     #Evolve pop a single generation at beginning of this epoch
                     qt.evolve_regions_qtrait_sampler_fitness(rng,
                                                              pops,
@@ -285,13 +285,12 @@ def main():
                                                              nregions,
                                                              sregions,
                                                              recregions,
-                                                             N, #This will end up not doing anything...
+                                                             N, 
                                                              sigE)
                     sampler=fp.VASampler(len(pops))
                     fp.apply_sampler(pops,sampler)
                     dummy=write_output(sampler,hdfout,REPID)
-
-                # #Do the evolution for rest of epoch
+                #Do the evolution for rest of epoch
                 qt.evolve_regions_qtrait_sampler_fitness(rng,
                                                          pops,
                                                          nosampler,
@@ -303,16 +302,17 @@ def main():
                                                          nregions,
                                                          sregions,
                                                          recregions,
-                                                         N, #This will end up not doing anything...
+                                                         N, 
                                                          sigE)
                 if EPOCH > 0:
+                    print ("ending epoch",EPOCH," of",len(epochs))
                     sampler=fp.VASampler(len(pops))
                     fp.apply_sampler(pops,sampler)
                     dummy=write_output(sampler,hdfout,REPID)
                 se+=e
                 EPOCH+=1
-            REPID+=len(pops)
-
+        REPID+=len(pops)
+        print ("finished evolving batch",i,"at",datetime.datetime.now().time().isoformat())
     hdfout.close()
 if __name__ == "__main__":
     main()
