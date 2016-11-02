@@ -28,6 +28,9 @@ cdef struct load_values:
 
 #Functions for re-use below
 cdef double gaussian_fitness(double P, double opt,double VS) nogil:
+    """
+    We always assume opt=0.,VS=1
+    """
     return exp(-1.*pow(opt-P,2.)/(2.*VS))
 
 cdef pair[double,double] haplotype_sums_seg(const singlepop_t * pop, const size_t diploid) nogil:
@@ -98,6 +101,9 @@ cdef double prod_fixed_effects(const singlepop_t * pop) nogil:
     return sprod
 
 cdef load_values make_return_value(unsigned generation) nogil:
+    """
+    Convenience func to return initialized struct
+    """
     cdef load_values rv
     rv.generation=generation
     rv.total=0.0
@@ -165,6 +171,8 @@ cdef load_values multiplicative_load(const singlepop_t * pop,const unsigned gene
     return rv
 
 #Now, we can construct our custom temporal samplers.
+#The extension types are implemented in terms of several
+#callback functions: the 3 defined above, plus apply_load_calculator.
 ctypedef vector[load_values] final_t
 ctypedef load_values(*load_calculator_fxn)(const singlepop_t *, const unsigned) nogil
 ctypedef custom_sampler_data[final_t,load_calculator_fxn] load_sampler_t
