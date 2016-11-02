@@ -27,7 +27,7 @@ cdef struct load_values:
 cdef double gaussian_fitness(double P, double opt,double VS) nogil:
     return exp(-1.*pow(opt-P,2.)/(2.*VS))
 
-cdef pair[double,double] haplotype_sums(const singlepop_t * pop, const size_t diploid) nogil:
+cdef pair[double,double] haplotype_sums_seg(const singlepop_t * pop, const size_t diploid) nogil:
     """
     Returns sum of s for each haplotype, only for seg variants
     """
@@ -79,7 +79,7 @@ cdef load_values additive_load(const singlepop_t * pop,const unsigned generation
     cdef size_t mut=0
     for i in range(pop.diploids.size()):
         rv.total += (1.-pop.diploids[i].w)
-        hapsums = haplotype_sums(pop,i)
+        hapsums = haplotype_sums_seg(pop,i)
         rv.seg += (1.-gaussian_fitness(hapsums.first+hapsums.second,0.,1.))
     rv.total /= <double>pop.diploids.size()
     rv.seg /= <double>pop.diploids.size()
