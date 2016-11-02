@@ -8,6 +8,10 @@ import getopt
 import sys
 import math
 import datetime
+#This is custom plugin:
+import pyximport
+pyximport.install()
+import loads
 
 def get_nlist():
     """
@@ -57,7 +61,7 @@ def usage():
     print ("\t-s float>0 (0.075) : Standard deviation in environmental noise added to trait values.")
     print ("\t-t int>0 (50) : Apply the sampler every t generations")
     print ("\t--model string (gbr) : Trait value model must be one of gbr, additive, or multi")
-    print ("\t--sampler string (None) : Must be one of VA or stats")
+    print ("\t--sampler string (None) : Must be one of VA, stats, or load")
     print ("\t--cores int>0 (64) : Number of populations to simulate simultaneously using different threads")
     print ("\t--batches int>0 (1) : Number of sets of simulations to do.  Total # sims will be (# cores)*(# batches)")
     print ("\t--seed int (0) : Random number seed")
@@ -78,7 +82,7 @@ def setup_fitness(fitnessString):
         usage()
         sys.exit(0)
 
-def setup_sampler(samplerString,len):
+def setup_sampler(samplerString,fitness,len):
     """
     Return the sampler to apply during the simulation
     """
@@ -87,8 +91,15 @@ def setup_sampler(samplerString,len):
     elif samplerString == "stats":
         #The second argument is the phenotypic optimum, which is 0 in these sims
         return fp.QtraitStatsSampler(len,0.0)
+    elif samplerString == "load":
+        if isinstance(fitness,qt.SpopGBRTrait):
+            return loads.gbrLoad(len)
+        elif isinstance(fitness,qt.SpopMultTrait):
+            return loads.multiplicativeLoad(len)
+        elif isinstance(fitness,qt.SpopAdditiveTrait):
+            return loads.additiveLoad(len)
     else:
-        print("sampler type must be VA or stats")
+        print("sampler type must be VA, stats, or load")
         usage()
         sys.exit(0)
 
@@ -109,6 +120,12 @@ def write_output(sampler,output,REPID):
         output.append('cumVA',pd.concat(df))
     elif isinstance(sampler,fp.QtraitStatsSampler):
         output.append('popstats',pd.concat(df))
+    elif isinstance(sampler,loads.gbrLoad):
+        print ("gbr")
+    elif isinstance(sampler,loads.additiveLoad):
+        print ("additive")
+    elif isinstance(sampler,loads.multiplicativeLoad):
+        print ("multiplicative")
     else:
         raise RuntimeError("uh oh: sampler type not recognized for output.  We shouldn't have gotten this far!")
 
