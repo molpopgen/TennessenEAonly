@@ -43,6 +43,19 @@ cdef pair[double,double] haplotype_sums(const singlepop_t * pop, const size_t di
         if pop.mcounts[pop.gametes[pop.diploids[diploid].second].smutations[mut]] < twoN:
             rv.second += pop.mutations[pop.gametes[pop.diploids[diploid].second].smutations[mut]].s
     return rv
+
+cdef double sum_fixed_effects(const singlepop_t * pop) nogil:
+    """
+    Returns sum of s across fixations
+    """
+    cdef unsigned twoN = 2*pop.diploids.size()
+    #Fixed load
+    cdef double ssum = 0.
+    for i in range(pop.mutations.size()):
+        if pop.mcounts[i]==twoN:
+            ssum += pop.mutations[i].s
+    return ssum
+    
         
 #The following functions calculate the mean load for each of the 3 models.
 #Notes:
@@ -55,21 +68,14 @@ cdef load_values additive_load(const singlepop_t * pop,const unsigned generation
     rv.fixed=0.0
     rv.seg=0.0
 
-    cdef size_t i = 0
-    cdef unsigned twoN = 2*pop.diploids.size()
-    #Fixed load
-    cdef double sum_fixed_effects = 0.
-    for i in range(pop.mutations.size()):
-        if pop.mcounts[i]==twoN:
-            sum_fixed_effects += pop.mutations[i].s
     #2*sum_fixed_effects b/c everyone is a homozygote
     #for a fixation
-    cdef double fixed_w = gaussian_fitness(2.*sum_fixed_effects,0.,1.)
+    cdef double fixed_w = gaussian_fitness(2.*sum_fixed_effects(pop),0.,1.)
     rv.fixed=1.-fixed_w
 
     #Seg and total loads
     cdef pair[double,double] hapsums
-    i=0
+    cdef size_t i = 0
     cdef size_t mut=0
     for i in range(pop.diploids.size()):
         rv.total += (1.-pop.diploids[i].w)
