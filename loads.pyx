@@ -56,18 +56,20 @@ cdef double sum_fixed_effects(const singlepop_t * pop) nogil:
             ssum += pop.mutations[i].s
     return ssum
     
-        
-#The following functions calculate the mean load for each of the 3 models.
-#Notes:
-#The fixed load is constant for everyone, so we just calculate it once.
-
-cdef load_values additive_load(const singlepop_t * pop,const unsigned generation) nogil:
+cdef load_values make_return_value(unsigned generation) nogil:
     cdef load_values rv
     rv.generation=generation
     rv.total=0.0
     rv.fixed=0.0
     rv.seg=0.0
+    return rv 
 
+#The following functions calculate the mean load for each of the 3 models.
+#Notes:
+#The fixed load is constant for everyone, so we just calculate it once.
+
+cdef load_values additive_load(const singlepop_t * pop,const unsigned generation) nogil:
+    rv = make_return_value(generation)
     #2*sum_fixed_effects b/c everyone is a homozygote
     #for a fixation
     cdef double fixed_w = gaussian_fitness(2.*sum_fixed_effects(pop),0.,1.)
