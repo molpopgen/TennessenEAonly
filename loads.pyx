@@ -11,13 +11,14 @@
 #This is a custom plugin based on fwdpy.
 #What we return is the mean value of each load over time.
 
-from fwdpy.fwdpy cimport TemporalSampler,sampler_base,custom_sampler,singlepop_t,uint
+from fwdpy.fwdpy cimport TemporalSampler,sampler_base,custom_sampler_data,singlepop_t,uint
 from fwdpy.fitness cimport het_mult_update, hom_mult_update_2
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
 from libcpp.memory cimport unique_ptr
 from libcpp.unordered_map cimport unordered_map
 from libc.math cimport sqrt,pow,exp
+from cython.operator cimport dereference as deref
 
 cdef struct load_values:
     unsigned generation
@@ -162,3 +163,40 @@ cdef load_values multiplicative_load(const singlepop_t * pop,const unsigned gene
     rv.total /= <double>pop.diploids.size()
     rv.seg /= <double>pop.diploids.size()
     return rv
+
+#Now, we can construct our custom temporal samplers.
+ctypedef vector[load_values] final_t
+ctypedef load_values(*load_calculator_fxn)(const singlepop_t *, const unsigned) nogil
+ctypedef custom_sampler_data[final_t,load_calculator_fxn] load_sampler_t
+
+cdef void apply_load_calculator(const singlepop_t * pop,const unsigned generation, final_t & final, load_calculator_fxn & f) nogil:
+    final.push_back(f(pop,generation))
+
+cdef get_data(const vector[unique_ptr[sampler_base]] & vec):
+    rv=[]
+    for i in range(vec.size()):
+        temp=(<load_sampler_t*>vec[i].get()).final()
+        rv.append(temp)
+    return rv
+
+cdef class additiveLoad(TemporalSampler):
+    def __cinit__(self,unsigned n):
+        for i in range(n):
+            self.vec.push_back(<unique_ptr[sampler_base]>unique_ptr[load_sampler_t](new load_sampler_t(&apply_load_calculator,&additive_load)))
+    def get(self):
+        return get_data(self.vec)
+
+cdef class gbrLoad(TemporalSampler):
+    def __cinit__(self,unsigned n):
+        for i in range(n):
+            self.vec.push_back(<unique_ptr[sampler_base]>unique_ptr[load_sampler_t](new load_sampler_t(&apply_load_calculator,&gbr_load)))
+    def get(self):
+        return get_data(self.vec)
+
+cdef class multiplicativeLoad(TemporalSampler):
+    def __cinit__(self,unsigned n):
+        for i in range(n):
+            self.vec.push_back(<unique_ptr[sampler_base]>unique_ptr[load_sampler_t](new load_sampler_t(&apply_load_calculator,&multiplicative_load)))
+    def get(self):
+        return get_data(self.vec)
+
