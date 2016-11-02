@@ -33,7 +33,7 @@ def get_nlist():
     n.extend([14474]*(5920-2040)) #E2
     n.extend([1861]*(2040-920)) #E3
     n.extend(dem.exponential_size_change(1032,9300,920-205)) #E4
-    n.extend(dem.exponential_size_change(9300,51200,205)) #E5
+    n.extend(dem.exponential_size_change(9300,512000,205)) #E5
     return np.array(n,dtype=np.uint32)
 
 def get_epoch_lengths():
@@ -116,6 +116,7 @@ def write_output(sampler,output,REPID):
     for i in df:
         i['rep']=[REPID]*len(i.index)
         REPID+=1
+        print(i.head())
     if isinstance(sampler,fp.VASampler):
         output.append('cumVA',pd.concat(df))
     elif isinstance(sampler,fp.QtraitStatsSampler):
@@ -256,7 +257,7 @@ def main():
                                                      N, #This will end up not doing anything...
                                                      sigE)
             print("evolved batch",i,"to equilibrium at",datetime.datetime.now().time().isoformat())
-            sampler = setup_sampler(samplerString,ncores)
+            sampler = setup_sampler(samplerString,fitness,ncores)
             #Now, evolve the rest of the way and sample...
             qt.evolve_regions_qtrait_sampler_fitness(rng,
                                                      pops,
