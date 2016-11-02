@@ -12,9 +12,11 @@
 #What we return is the mean value of each load over time.
 
 from fwdpy.fwdpy cimport TemporalSampler,sampler_base,custom_sampler,singlepop_t,uint
+from fwdpy.fitness cimport het_mult_update, hom_mult_update_2
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
 from libcpp.memory cimport unique_ptr
+from libcpp.unordered_map cimport unordered_map
 from libc.math cimport sqrt,pow,exp
 
 cdef struct load_values:
@@ -44,6 +46,29 @@ cdef pair[double,double] haplotype_sums_seg(const singlepop_t * pop, const size_
             rv.second += pop.mutations[pop.gametes[pop.diploids[diploid].second].smutations[mut]].s
     return rv
 
+cdef double multiplicative_pheno_seg(const singlepop_t * pop, const size_t diploid) nogil:
+    """
+    Returns calculation of phenotype under multiplicative model, only using segregating variants.
+    This function is a bummer--we need a lookup table to deal with het/homo status
+    """
+    cdef double P=1.
+    cdef unsigned twoN=2*pop.diploids.size()
+    cdef size_t mut = 0
+    #Count # of times each mutation occurs in this diploid:
+    cdef unordered_map[size_t,int] genotypes
+    for mut in range(pop.gametes[pop.diploids[diploid].first].smutations.size()):
+        if pop.mcounts[pop.gametes[pop.diploids[diploid].first].smutations[mut]] < twoN:
+            genotypes[pop.gametes[pop.diploids[diploid].first].smutations[mut]]+=1
+    for mut in range(pop.gametes[pop.diploids[diploid].second].smutations.size()):
+        if pop.mcounts[pop.gametes[pop.diploids[diploid].second].smutations[mut]] < twoN:
+            genotypes[pop.gametes[pop.diploids[diploid].second].smutations[mut]]+=1
+    for i in genotypes:
+        if i.second == 1:
+            het_mult_update(P,pop.mutations[i.first])
+        elif i.second == 2:
+            hom_mult_update_2(P,pop.mutations[i.first])
+    return 1.-P
+
 cdef double sum_fixed_effects(const singlepop_t * pop) nogil:
     """
     Returns sum of s across fixations
@@ -56,6 +81,21 @@ cdef double sum_fixed_effects(const singlepop_t * pop) nogil:
             ssum += pop.mutations[i].s
     return ssum
     
+cdef double prod_fixed_effects(const singlepop_t * pop) nogil:
+    """
+    Returns prod of s across fixations.
+
+    Note: this is the total effect for a diploid, accounting 
+    for fact that everyone is a homozygote
+    """
+    cdef unsigned twoN = 2*pop.diploids.size()
+    #Fixed load
+    cdef double sprod = 1.
+    for i in range(pop.mutations.size()):
+        if pop.mcounts[i]==twoN:
+            sprod *= (1.+2.*pop.mutations[i].s)
+    return sprod
+
 cdef load_values make_return_value(unsigned generation) nogil:
     cdef load_values rv
     rv.generation=generation
@@ -86,3 +126,39 @@ cdef load_values additive_load(const singlepop_t * pop,const unsigned generation
     rv.total /= <double>pop.diploids.size()
     rv.seg /= <double>pop.diploids.size()
     return rv;
+
+cdef load_values gbr_load(const singlepop_t * pop,const unsigned generation) nogil:
+    rv = make_return_value(generation)
+    #For this model, P = sqrt(h1*h2), where the h terms are
+    #sum over effect sizes on each haplotype.
+    #For fixations, h1=h2, and thus P = sqrt(h2^2)=h1.
+    rv.fixed = 1.-gaussian_fitness(sum_fixed_effects(pop),0.,1.)
+
+    #Seg and total loads
+    cdef pair[double,double] hapsums
+    cdef size_t i = 0
+    cdef size_t mut=0
+    cdef double P
+    for i in range(pop.diploids.size()):
+        rv.total += (1.-pop.diploids[i].w)
+        hapsums = haplotype_sums_seg(pop,i)
+        P=sqrt(hapsums.first*hapsums.second)
+        rv.seg += (1.-gaussian_fitness(P,0.,1.))
+    rv.total /= <double>pop.diploids.size()
+    rv.seg /= <double>pop.diploids.size()
+    return rv;
+
+cdef load_values multiplicative_load(const singlepop_t * pop,const unsigned generation) nogil:
+    rv = make_return_value(generation)
+    rv.fixed = 1.-(1.- gaussian_fitness(2.*prod_fixed_effects(pop),0.,1.))
+
+    #Seg and total loads
+    cdef size_t i = 0
+    cdef double p
+    for i in range(pop.diploids.size()):
+        rv.total += (1.-pop.diploids[i].w)
+        p = multiplicative_pheno_seg(pop,i)
+        rv.seg += (1.-gaussian_fitness(p,0.,1.))
+    rv.total /= <double>pop.diploids.size()
+    rv.seg /= <double>pop.diploids.size()
+    return rv
