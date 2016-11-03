@@ -138,6 +138,7 @@ cdef void update_number_mutations(const singlepop_t * pop, const size_t diploid,
             aa+=1
     l.total_Aa+=<double>Aa
     l.total_aa+=<double>aa
+    l.total_muts+=(<double>Aa+2.*<double>aa)
 
 #The following functions calculate the mean load for each of the 3 models.
 #Notes:
@@ -163,6 +164,7 @@ cdef load_values additive_load(const singlepop_t * pop,const unsigned generation
     rv.seg /= <double>pop.diploids.size()
     rv.total_Aa/=<double>pop.diploids.size()
     rv.total_aa/=<double>pop.diploids.size()
+    rv.total_muts/=<double>pop.diploids.size()
     return rv;
 
 cdef load_values gbr_load(const singlepop_t * pop,const unsigned generation) nogil:
@@ -187,6 +189,7 @@ cdef load_values gbr_load(const singlepop_t * pop,const unsigned generation) nog
     rv.seg /= <double>pop.diploids.size()
     rv.total_Aa/=<double>pop.diploids.size()
     rv.total_aa/=<double>pop.diploids.size()
+    rv.total_muts/=<double>pop.diploids.size()
     return rv;
 
 cdef load_values multiplicative_load(const singlepop_t * pop,const unsigned generation) nogil:
@@ -205,6 +208,7 @@ cdef load_values multiplicative_load(const singlepop_t * pop,const unsigned gene
     rv.seg /= <double>pop.diploids.size()
     rv.total_Aa/=<double>pop.diploids.size()
     rv.total_aa/=<double>pop.diploids.size()
+    rv.total_muts/=<double>pop.diploids.size()
     return rv
 
 #Now, we can construct our custom temporal samplers.
