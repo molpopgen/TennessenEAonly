@@ -113,10 +113,6 @@ def write_output(sampler,output,REPID):
     print("starting to get results from sampler at",datetime.datetime.now().time().isoformat())
     df=[pd.DataFrame(i) for i in sampler.get()]
     print("finished getting results from sampler at",datetime.datetime.now().time().isoformat())
-    for i in df:
-        i['rep']=[REPID]*len(i.index)
-        REPID+=1
-        print(i.head())
     if isinstance(sampler,fp.VASampler):
         output.append('cumVA',pd.concat(df))
     elif isinstance(sampler,fp.QtraitStatsSampler):
