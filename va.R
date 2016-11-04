@@ -47,7 +47,6 @@ dobiglm<-function(data)
     subset[START:STOP]=1
     while( START < popsize )
     {
-        print(paste(START,STOP))
         update(fit,moredata=data[which(subset==1),])
         subset[START:STOP]=0
         START=STOP+1
@@ -64,7 +63,6 @@ popsize=nrow(data)
 
 data.aov.s=dobiglm(data)
 ROWS=rownames(data.aov.s[[1]])
-print(ROWS)
 alleleCounts = as.integer(colSums(data[,sapply(as.array(ROWS[1:(length(ROWS)-1)]),function(x) gsub(" ","",x),USE.NAMES=FALSE)]))
 
 ##Initalize the matrix to return.
