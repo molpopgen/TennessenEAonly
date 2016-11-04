@@ -125,7 +125,7 @@ cdef load_values make_return_value(const singlepop_t * pop,unsigned generation) 
     for i in range(pop.mcounts.size()):
         if pop.mcounts[i]==twoN:
             nfixed+=1
-    rv.total_fixed=<double>nfixed
+    rv.total_fixed=2.*<double>nfixed
     return rv 
 
 cdef void update_number_mutations(const singlepop_t * pop, const size_t diploid,load_values * l) nogil:
