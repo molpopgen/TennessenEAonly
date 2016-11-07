@@ -345,7 +345,7 @@ def main():
                         #print ("sampling files in epoch ",EPOCH)
                         file_sampler=fp.GenoMatrixSampler(len(pops),True,True)
                         fp.apply_sampler(pops,file_sampler)
-                        file_sampler.tofile("foobig",REPID)
+                        file_sampler.tofile(bigstub,REPID)
                         file_sampler.force_clear()
                         del file_sampler
                 se+=e
