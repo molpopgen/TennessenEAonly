@@ -12,6 +12,9 @@ cd $SGE_O_WORKDIR
 INFILE=`head -n $SGE_TASK_ID bigN/infiles | tail -n 1`
 OUTFILEBASE=`basename $INFILE .gz`
 
-Rscript va.R $INFILE bigN/$OUTFILEBASE.VA.gz
+if [ ! -s bigN/$OUTFILEBASE.VA.gz ]
+then
+	Rscript va.R $INFILE bigN/$OUTFILEBASE.VA.gz
+fi
 
 
