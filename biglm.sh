@@ -1,8 +1,9 @@
 #!/bin/bash
 
-#$ -q krt,krti,pub64,sf,bio
+#$ -q krt,krti,pub64,bio,free64
 #$ -pe openmp 3
 #$ -t 1-1500
+#$ -ckpt restart
 
 module load R
 
