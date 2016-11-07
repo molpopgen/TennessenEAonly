@@ -63,7 +63,7 @@ popsize=nrow(data)
 
 data.aov.s=dobiglm(data)
 ROWS=rownames(data.aov.s[[1]])
-alleleCounts = as.integer(colSums(data[,sapply(as.array(ROWS[1:(length(ROWS)-1)]),function(x) gsub(" ","",x),USE.NAMES=FALSE)]))
+alleleCounts = as.integer(colSums(data.frame(data)[,sapply(as.array(ROWS[1:(length(ROWS)-1)]),function(x) gsub(" ","",x),USE.NAMES=FALSE)]))
 
 ##Initalize the matrix to return.
 ##The columns will be: mutant allele frequency, r^2, adj. r^2
@@ -77,6 +77,7 @@ DF = data.aov.s[[1]]$'Df'
 n = length(sum.sq)
 ##Populate the matrix, starting with the rares
 IDX=1
+twoN=2*nrow(data)
 for( ac in unique(sort(alleleCounts)) )
     {
         ac.sum.sq = sum.sq[which(alleleCounts == ac)]
@@ -98,3 +99,6 @@ for( ac in unique(sort(alleleCounts)) )
 rsq = cumsum(rsq)
 adj.rsq = cumsum(adj.rsq)
 final=fillvpv1matrix(data.frame(p,rsq,adj.rsq),2*popsize)
+out=gzfile(args[2],open="w")
+write.table(final,out,quote=F,row.names=FALSE,col.names=TRUE)
+close(out)
