@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #$ -q krt,krti,bio,pub64,abio,free64
-#$ -pe openmp 4
+#$ -pe openmp 1
 #$ -ckpt restart
 #$ -R y
 ##These jobs take A HECK OF A LOT of RAM, so avoid low-memory nodes:
@@ -20,4 +20,4 @@ sampler=$6
 
 #1 rep at a time, but use an array job
 SEED=`echo "$RANDOM*$SGE_TASK_ID"|bc -l`
-/usr/bin/time -f "%e %M" -o $outfile.$SGE_TASK_ID.time python -u tennessen.py --model $model -l $lambda -o $outfile.$SGE_TASK_ID.h5 --seed $SEED -d $5 --sampler $6 --batches 1 --cores 1 -t 1000 --bigstub bigN/$outfile.$SGE_TASK_ID
+python tennessen.py --model $model -l $lambda -o $outfile.$SGE_TASK_ID.h5 --seed $SEED -d $5 --sampler $6 --batches 1 --cores 1 -t 1000 --bigstub bigN/$outfile.$SGE_TASK_ID
