@@ -112,9 +112,7 @@ def write_output(sampler,output,REPID):
     a "replicate ID number" to each element,
     then write to an HDF5 file.
     """
-    print("starting to get results from sampler at",datetime.datetime.now().time().isoformat())
     df=[pd.DataFrame(i) for i in sampler.get()]
-    print("finished getting results from sampler at",datetime.datetime.now().time().isoformat())
     if isinstance(sampler,fp.VASampler):
         output.append('cumVA',pd.concat(df))
     elif isinstance(sampler,fp.QtraitStatsSampler):
