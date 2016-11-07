@@ -8,6 +8,7 @@ import getopt
 import sys
 import math
 import datetime
+import gc
 #This is custom plugin:
 import pyximport
 pyximport.install()
@@ -62,6 +63,7 @@ def usage():
     print ("\t-t int>0 (50) : Apply the sampler every t generations")
     print ("\t--model string (gbr) : Trait value model must be one of gbr, additive, or multi")
     print ("\t--sampler string (None) : Must be one of VA, stats, or load")
+    print ("\t--bigstub string (None) : Base file name for genotype matrices for N=512,000.  Required for VA sampler and ignored otherwise")
     print ("\t--cores int>0 (64) : Number of populations to simulate simultaneously using different threads")
     print ("\t--batches int>0 (1) : Number of sets of simulations to do.  Total # sims will be (# cores)*(# batches)")
     print ("\t--seed int (0) : Random number seed")
@@ -128,11 +130,19 @@ def write_output(sampler,output,REPID):
 
     return REPID
 
+#def write_files(args):
+#def write_files(pops,REPID):
+    #file_sampler=fp.GenoMatrixSampler(len(args[0]),True,True)
+#    file_sampler=fp.GenoMatrixSampler(len(pops),True,True)
+#    fp.apply_sampler(pops,file_sampler)
+#    file_sampler.tofile("foobig",REPID)
+#    file_sampler.force_clear()
+#    del file_sampler
+    
 def main():
-
     ##Parse options
     try:
-        opts,args = getopt.getopt(sys.argv[1:],"m:l:r:o:d:s:t:",["model=","sampler=","cores=","batches=","seed=","usage"])
+        opts,args = getopt.getopt(sys.argv[1:],"m:l:r:o:d:s:t:",["model=","sampler=","cores=","batches=","seed=","usage","bigstub="])
     except getopt.GetoptError as err:
         print(err) # will print something like "option -a not recognized"
         usage()
@@ -153,7 +163,7 @@ def main():
     mutrate = 1.25e-4
     recrate = 1.25e-3
     sigE = 0.075
-    
+    bigstub = None    
     #For "site-based" models with dominance
     dominance = 1.0
     
@@ -206,6 +216,8 @@ def main():
                 sys.exit(0)
         elif o == '--seed':
             seed = int(a)
+        elif o == '--bigstub':
+            bigstub=a
         elif o == '--usage':
             usage()
             sys.exit(0)
@@ -220,7 +232,10 @@ def main():
         print("output file undefined")
         usage()
         sys.exit(0)
-
+    if samplerString=="VA" and bigstub is None:
+        print("must define --bigstub when using VA sampler")
+        usage()
+        sys.exit(0)
     #Now, we can get to work
     REPID = 0
     N=7310
@@ -235,7 +250,8 @@ def main():
     epochs=get_epoch_lengths()
     hdfout = pd.HDFStore(outfile,'w',complevel=6,complib='zlib')
     for i in range(nbatches):
-        print ("starting batch",i,"of",nbatches," at",datetime.datetime.now().time().isoformat())
+        #print ("starting batch",i,"of",nbatches," at",datetime.datetime.now().time().isoformat())
+        gc.collect()
         pops = fp.SpopVec(ncores,N)
         if samplerString != 'VA':
             #We will evolve the first 8N generations w/o sampling anything
@@ -252,7 +268,7 @@ def main():
                                                      recregions,
                                                      N, #This will end up not doing anything...
                                                      sigE)
-            print("evolved batch",i,"to equilibrium at",datetime.datetime.now().time().isoformat())
+            #print("evolved batch",i,"to equilibrium at",datetime.datetime.now().time().isoformat())
             sampler = setup_sampler(samplerString,fitness,ncores)
             #Now, evolve the rest of the way and sample...
             qt.evolve_regions_qtrait_sampler_fitness(rng,
@@ -272,7 +288,7 @@ def main():
             #then process it so that the final generation is included
             if float(len(nlist))%float(tsample) != 0.0:
                 fp.apply_sampler(pops,sampler)
-                print ("Applied final sampler at",datetime.datetime.now().time().isoformat())
+                #print ("Applied final sampler at",datetime.datetime.now().time().isoformat())
                 REPID=write_output(sampler,hdfout,REPID)
         else:
             #For the VA sampler, we simulate each epoch separately.
@@ -284,9 +300,8 @@ def main():
             for e in epochs:
                 start=se
                 end=se+e-1
-                print(e,se,len(nlist),nlist[start],nlist[end],len(nlist[start:end+1]))
+                #print(e,se,len(nlist),nlist[start],nlist[end],len(nlist[start:end+1]))
                 if EPOCH > 0:
-                    print ("starting epoch",EPOCH)
                     #Evolve pop a single generation at beginning of this epoch
                     qt.evolve_regions_qtrait_sampler_fitness(rng,
                                                              pops,
@@ -319,14 +334,26 @@ def main():
                                                          N, 
                                                          sigE)
                 if EPOCH > 0:
-                    print ("ending epoch",EPOCH," of",len(epochs))
-                    sampler=fp.VASampler(len(pops))
-                    fp.apply_sampler(pops,sampler)
-                    dummy=write_output(sampler,hdfout,REPID)
+                    #print ("ending epoch",EPOCH," of",len(epochs))
+                    #We just don't have the
+                    #RAM to do the regression in memory
+                    #for this pop size
+                    if EPOCH < len(epochs)-1:
+                        sampler=fp.VASampler(len(pops))
+                        dummy=write_output(sampler,hdfout,REPID)
+                    else:
+                        #We gotta do something else,
+                        #which means write the damn things to file!
+                        #print ("sampling files in epoch ",EPOCH)
+                        file_sampler=fp.GenoMatrixSampler(len(pops),True,True)
+                        fp.apply_sampler(pops,file_sampler)
+                        file_sampler.tofile("foobig",REPID)
+                        file_sampler.force_clear()
+                        del file_sampler
                 se+=e
                 EPOCH+=1
         REPID+=len(pops)
-        print ("finished evolving batch",i,"at",datetime.datetime.now().time().isoformat())
+        #print ("finished evolving batch",i,"at",datetime.datetime.now().time().isoformat())
     hdfout.close()
 if __name__ == "__main__":
     main()
