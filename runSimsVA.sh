@@ -20,4 +20,4 @@ sampler=$6
 
 #1 rep at a time, but use an array job
 SEED=`echo "$RANDOM*$SGE_TASK_ID"|bc -l`
-/usr/bin/time -f "%e %M" -o $outfile.$SGE_TASK_ID.time python -u tennessen.py --model $model -l $lambda -o $outfile.$SGE_TASK_ID.h5 --seed $SEED -d $5 --sampler $6 --batches 1 --cores 1 -t 1000
+/usr/bin/time -f "%e %M" -o $outfile.$SGE_TASK_ID.time python -u tennessen.py --model $model -l $lambda -o $outfile.$SGE_TASK_ID.h5 --seed $SEED -d $5 --sampler $6 --batches 1 --cores 1 -t 1000 --bigstub $outfile.$SGE_TASK_ID
