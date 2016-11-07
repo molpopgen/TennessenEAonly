@@ -113,16 +113,19 @@ def write_output(sampler,output,REPID):
     then write to an HDF5 file.
     """
     df=[pd.DataFrame(i) for i in sampler.get()]
+    for dfi in df:
+        dfi['rep']=[REPID]*len(dfi.index)
+        REPID+=1
     if isinstance(sampler,fp.VASampler):
         output.append('cumVA',pd.concat(df))
     elif isinstance(sampler,fp.QtraitStatsSampler):
         output.append('popstats',pd.concat(df))
     elif isinstance(sampler,loads.gbrLoad):
-        print ("gbr")
+        output.append("load",pd.concat(df))
     elif isinstance(sampler,loads.additiveLoad):
-        print ("additive")
+        output.append("load",pd.concat(df))
     elif isinstance(sampler,loads.multiplicativeLoad):
-        print ("multiplicative")
+        output.append("load",pd.concat(df))
     else:
         raise RuntimeError("uh oh: sampler type not recognized for output.  We shouldn't have gotten this far!")
 
