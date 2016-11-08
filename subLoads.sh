@@ -3,7 +3,7 @@
 #Do additive model and GBR model over various mean effect sizes
 #Do multiplicative ("popgen") model over a few different dominance valuse
 
-sampler=loads
+sampler=load
 #Remember: GBR model = dominance doesn't matter
 
 seed=$RANDOM
