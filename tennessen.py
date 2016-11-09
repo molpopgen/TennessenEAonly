@@ -341,6 +341,7 @@ def main():
                     #for this pop size
                     if EPOCH < len(epochs)-1:
                         sampler=fp.VASampler(len(pops))
+                        fp.apply_sampler(pops,sampler)
                         dummy=write_output(sampler,hdfout,REPID)
                     else:
                         #We gotta do something else,
