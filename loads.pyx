@@ -106,7 +106,7 @@ cdef double prod_fixed_effects(const singlepop_t * pop) nogil:
     for i in range(pop.mutations.size()):
         if pop.mcounts[i]==twoN:
             sprod *= (1.+2.*pop.mutations[i].s)
-    return sprod
+    return sprod-1.0
 
 cdef load_values make_return_value(const singlepop_t * pop,unsigned generation) nogil:
     """
@@ -194,7 +194,7 @@ cdef load_values gbr_load(const singlepop_t * pop,const unsigned generation) nog
 
 cdef load_values multiplicative_load(const singlepop_t * pop,const unsigned generation) nogil:
     rv = make_return_value(pop,generation)
-    rv.fixed = 1.-(1.- gaussian_fitness(2.*prod_fixed_effects(pop),0.,1.))
+    rv.fixed = 1.-(prod_fixed_effects(pop),0.,1.))
 
     #Seg and total loads
     cdef size_t i = 0
