@@ -194,7 +194,7 @@ cdef load_values gbr_load(const singlepop_t * pop,const unsigned generation) nog
 
 cdef load_values multiplicative_load(const singlepop_t * pop,const unsigned generation) nogil:
     rv = make_return_value(pop,generation)
-    rv.fixed = 1.-(prod_fixed_effects(pop),0.,1.))
+    rv.fixed = 1.-gaussian_fitness(prod_fixed_effects(pop),0.,1.)
 
     #Seg and total loads
     cdef size_t i = 0
